@@ -14,7 +14,7 @@ public class StatusController {
     public ResponseEntity<Map<String, String>> getStatus() {
         return ResponseEntity.ok(Map.of(
                 "status", "UP",
-                "application", "marketplace"
+                "application", "marketplace - grupo 5"
         ));
     }
 }
