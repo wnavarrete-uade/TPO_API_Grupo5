@@ -12,5 +12,9 @@ public class Product {
     private String name;
     private String description;
     private Double price;
+    private Double discount; // porcentaje de descuento (0 a 100)
+    private Integer stock;
+    private String imageUrl;
     private Long categoryId;
+    private Long sellerId;
 }

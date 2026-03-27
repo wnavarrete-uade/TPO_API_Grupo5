@@ -1,6 +1,7 @@
 package com.grupo5.tpo.marketplace.model;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -10,11 +11,9 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class Order {
+public class Cart {
     private Long id;
     private Long userId;
-    private Double total;
-    private String status; // PENDING, CONFIRMED, CANCELLED
     private LocalDateTime createdAt;
-    private List<OrderItem> items;
+    private List<CartItem> items = new ArrayList<>();
 }
