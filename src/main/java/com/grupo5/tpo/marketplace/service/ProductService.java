@@ -1,90 +1,120 @@
 package com.grupo5.tpo.marketplace.service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.grupo5.tpo.marketplace.dto.ProductRequest;
+import com.grupo5.tpo.marketplace.exception.BadRequestException;
+import com.grupo5.tpo.marketplace.exception.ResourceNotFoundException;
+import com.grupo5.tpo.marketplace.model.Category;
 import com.grupo5.tpo.marketplace.model.Product;
+import com.grupo5.tpo.marketplace.model.User;
+import com.grupo5.tpo.marketplace.repository.CategoryRepository;
+import com.grupo5.tpo.marketplace.repository.ProductRepository;
+import com.grupo5.tpo.marketplace.repository.UserRepository;
 
 @Service
 public class ProductService {
 
-    private final AtomicLong idCounter = new AtomicLong(11);
+    @Autowired
+    private ProductRepository productRepository;
 
-    private final List<Product> products = new ArrayList<>(List.of(
-            new Product(1L, "Whey Protein Gold Standard", "Proteína whey isolate 2lb - Sabor chocolate", 45000.0, 0.0, 50, "https://placeholder.com/whey-gold.jpg", 1L, 1L),
-            new Product(2L, "Creatina Monohidrato 300g", "Creatina micronizada pura sin sabor", 22000.0, 10.0, 80, "https://placeholder.com/creatina.jpg", 2L, 1L),
-            new Product(3L, "Pre-Workout C4 Original", "Pre-entreno con beta-alanina y cafeína - Sabor frutal", 38000.0, 0.0, 30, "https://placeholder.com/c4.jpg", 3L, 1L),
-            new Product(4L, "BCAA 2:1:1 en polvo", "Aminoácidos ramificados 400g - Sabor uva", 18000.0, 0.0, 60, "https://placeholder.com/bcaa.jpg", 2L, 1L),
-            new Product(5L, "Multivitamínico Daily Formula", "Complejo vitamínico y mineral - 100 tabletas", 15000.0, 5.0, 100, "https://placeholder.com/multi.jpg", 4L, 1L),
-            new Product(6L, "Guantes de Gimnasio Pro", "Guantes con muñequera ajustable - Talle M", 12000.0, 0.0, 40, "https://placeholder.com/guantes.jpg", 5L, 1L),
-            new Product(7L, "Faja Lumbar Neoprene", "Faja de soporte lumbar para levantamiento", 16000.0, 15.0, 25, "https://placeholder.com/faja.jpg", 5L, 1L),
-            new Product(8L, "Remera Dry-Fit Entrenamiento", "Remera transpirable secado rápido - Talle L", 9500.0, 0.0, 70, "https://placeholder.com/remera.jpg", 6L, 1L),
-            new Product(9L, "Proteína Vegana Orgánica", "Proteína plant-based 1kg - Sabor vainilla", 42000.0, 0.0, 20, "https://placeholder.com/vegana.jpg", 1L, 1L),
-            new Product(10L, "Straps de Levantamiento", "Straps de algodón reforzado para peso muerto", 7500.0, 0.0, 55, "https://placeholder.com/straps.jpg", 5L, 1L)
-    ));
+    @Autowired
+    private CategoryRepository categoryRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
     public List<Product> getAll() {
-        return products;
+        return productRepository.findAll();
     }
 
-    public Optional<Product> getById(Long id) {
-        return products.stream()
-                .filter(p -> p.getId().equals(id))
-                .findFirst();
+    public Product getById(Long id) {
+        return productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto no encontrado"));
     }
 
     public List<Product> getByCategoryId(Long categoryId) {
-        return products.stream()
-                .filter(p -> p.getCategoryId().equals(categoryId))
-                .collect(Collectors.toList());
+        return productRepository.findByCategoryId(categoryId);
+    }
+
+    public List<Product> getBySellerId(Long sellerId) {
+        return productRepository.findBySellerId(sellerId);
     }
 
     public List<Product> search(String query) {
-        String lowerQuery = query.toLowerCase();
-        return products.stream()
-                .filter(p -> p.getName().toLowerCase().contains(lowerQuery)
-                        || p.getDescription().toLowerCase().contains(lowerQuery))
-                .collect(Collectors.toList());
+        return productRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(query, query);
     }
 
-    public Product create(Product product) {
-        product.setId(idCounter.getAndIncrement());
-        if (product.getDiscount() == null) product.setDiscount(0.0);
-        products.add(product);
-        return product;
+    public Product create(ProductRequest request, String sellerUsername) {
+        User seller = userRepository.findByUsername(sellerUsername)
+                .orElseThrow(() -> new ResourceNotFoundException("Vendedor no encontrado"));
+
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
+
+        Product product = new Product();
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+        product.setDiscount(request.getDiscount() != null ? request.getDiscount() : 0.0);
+        product.setStock(request.getStock());
+        product.setImageUrl(request.getImageUrl());
+        product.setCategory(category);
+        product.setSeller(seller);
+
+        return productRepository.save(product);
     }
 
-    public Optional<Product> update(Long id, Product updated) {
-        return getById(id).map(existing -> {
-            existing.setName(updated.getName());
-            existing.setDescription(updated.getDescription());
-            existing.setPrice(updated.getPrice());
-            existing.setImageUrl(updated.getImageUrl());
-            existing.setCategoryId(updated.getCategoryId());
-            return existing;
-        });
+    public Product update(Long id, ProductRequest request, String sellerUsername) {
+        Product product = getById(id);
+
+        // Verificar que el vendedor sea el dueño del producto
+        if (!product.getSeller().getUsername().equals(sellerUsername)) {
+            throw new BadRequestException("No tenés permisos para modificar este producto");
+        }
+
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
+
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+        product.setStock(request.getStock());
+        product.setImageUrl(request.getImageUrl());
+        product.setCategory(category);
+        if (request.getDiscount() != null) {
+            product.setDiscount(request.getDiscount());
+        }
+
+        return productRepository.save(product);
     }
 
-    public boolean delete(Long id) {
-        return products.removeIf(p -> p.getId().equals(id));
+    public void delete(Long id, String sellerUsername) {
+        Product product = getById(id);
+        if (!product.getSeller().getUsername().equals(sellerUsername)) {
+            throw new BadRequestException("No tenés permisos para eliminar este producto");
+        }
+        productRepository.delete(product);
     }
 
-    public Optional<Product> updateStock(Long id, Integer stock) {
-        return getById(id).map(p -> {
-            p.setStock(stock);
-            return p;
-        });
+    public Product updateStock(Long id, Integer stock, String sellerUsername) {
+        Product product = getById(id);
+        if (!product.getSeller().getUsername().equals(sellerUsername)) {
+            throw new BadRequestException("No tenés permisos para modificar el stock");
+        }
+        product.setStock(stock);
+        return productRepository.save(product);
     }
 
-    public Optional<Product> updateDiscount(Long id, Double discount) {
-        return getById(id).map(p -> {
-            p.setDiscount(discount);
-            return p;
-        });
+    public Product updateDiscount(Long id, Double discount, String sellerUsername) {
+        Product product = getById(id);
+        if (!product.getSeller().getUsername().equals(sellerUsername)) {
+            throw new BadRequestException("No tenés permisos para modificar el descuento");
+        }
+        product.setDiscount(discount);
+        return productRepository.save(product);
     }
 }

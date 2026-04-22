@@ -1,32 +1,26 @@
 package com.grupo5.tpo.marketplace.service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.grupo5.tpo.marketplace.exception.ResourceNotFoundException;
 import com.grupo5.tpo.marketplace.model.Category;
+import com.grupo5.tpo.marketplace.repository.CategoryRepository;
 
 @Service
 public class CategoryService {
 
-    private final List<Category> categories = new ArrayList<>(List.of(
-            new Category(1L, "Proteínas", "Whey, caseína, vegana y más"),
-            new Category(2L, "Creatina y Aminoácidos", "Creatina monohidrato, BCAA, glutamina"),
-            new Category(3L, "Pre-entrenos", "Suplementos pre-workout y energizantes"),
-            new Category(4L, "Vitaminas", "Multivitamínicos y minerales"),
-            new Category(5L, "Accesorios", "Guantes, fajas, straps, muñequeras"),
-            new Category(6L, "Indumentaria", "Ropa deportiva para entrenamiento")
-    ));
+    @Autowired
+    private CategoryRepository categoryRepository;
 
     public List<Category> getAll() {
-        return categories;
+        return categoryRepository.findAll();
     }
 
-    public Optional<Category> getById(Long id) {
-        return categories.stream()
-                .filter(c -> c.getId().equals(id))
-                .findFirst();
+    public Category getById(Long id) {
+        return categoryRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
     }
 }
