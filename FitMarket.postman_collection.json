@@ -1,0 +1,388 @@
+{
+  "info": {
+    "name": "FitMarket - Grupo 5",
+    "description": "Coleccion de pruebas para FitMarket - Marketplace de Suplementos Deportivos\nUADE - API 1C 2026",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" },
+    { "key": "token", "value": "" },
+    { "key": "buyerToken", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "1. Auth",
+      "item": [
+        {
+          "name": "1.1 Register - Nuevo Comprador",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser\",\n  \"email\": \"test@fitmarket.com\",\n  \"password\": \"123456\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"role\": \"BUYER\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/register", "host": ["{{baseUrl}}"], "path": ["auth", "register"] }
+          }
+        },
+        {
+          "name": "1.2 Login - Vendedor (SELLER)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set('token', jsonData.token);",
+                  "    console.log('Token SELLER guardado');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"vendedor1\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        },
+        {
+          "name": "1.3 Login - Comprador (BUYER)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.token) {",
+                  "    pm.collectionVariables.set('buyerToken', jsonData.token);",
+                  "    console.log('Token BUYER guardado');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"comprador1\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/auth/login", "host": ["{{baseUrl}}"], "path": ["auth", "login"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Productos (Publicos)",
+      "item": [
+        {
+          "name": "2.1 GET Todos los productos",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+          }
+        },
+        {
+          "name": "2.2 GET Producto por ID",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products/1", "host": ["{{baseUrl}}"], "path": ["products", "1"] }
+          }
+        },
+        {
+          "name": "2.3 GET Productos por categoria",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products?categoryId=1", "host": ["{{baseUrl}}"], "path": ["products"], "query": [{ "key": "categoryId", "value": "1" }] }
+          }
+        },
+        {
+          "name": "2.4 GET Buscar productos",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products?search=whey", "host": ["{{baseUrl}}"], "path": ["products"], "query": [{ "key": "search", "value": "whey" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Categorias (Publicos)",
+      "item": [
+        {
+          "name": "3.1 GET Todas las categorias",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/categories", "host": ["{{baseUrl}}"], "path": ["categories"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Productos - SELLER (Protegidos)",
+      "item": [
+        {
+          "name": "4.1 POST Crear producto (SELLER)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Glutamina 500g\",\n  \"description\": \"Glutamina micronizada pura\",\n  \"price\": 25000,\n  \"stock\": 40,\n  \"discount\": 0,\n  \"imageUrl\": \"https://images.unsplash.com/photo-1593095948071-474c5cc2c614?w=600\",\n  \"categoryId\": 2\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+          }
+        },
+        {
+          "name": "4.2 PUT Modificar producto (SELLER)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Whey Protein Gold Standard 5lb\",\n  \"description\": \"Proteina whey isolate 5lb - Sabor chocolate EDICION ESPECIAL\",\n  \"price\": 85000,\n  \"stock\": 25,\n  \"discount\": 10,\n  \"imageUrl\": \"https://images.unsplash.com/photo-1693711942336-f4f9963bd364?w=600\",\n  \"categoryId\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products/1", "host": ["{{baseUrl}}"], "path": ["products", "1"] }
+          }
+        },
+        {
+          "name": "4.3 PATCH Actualizar stock (SELLER)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stock\": 100\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products/1/stock", "host": ["{{baseUrl}}"], "path": ["products", "1", "stock"] }
+          }
+        },
+        {
+          "name": "4.4 PATCH Aplicar descuento (SELLER)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"discount\": 20\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products/1/discount", "host": ["{{baseUrl}}"], "path": ["products", "1", "discount"] }
+          }
+        },
+        {
+          "name": "4.5 DELETE Eliminar producto (SELLER)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/products/10", "host": ["{{baseUrl}}"], "path": ["products", "10"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Carrito (Protegido - BUYER)",
+      "item": [
+        {
+          "name": "5.1 GET Ver carrito",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{buyerToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/cart?userId=2", "host": ["{{baseUrl}}"], "path": ["cart"], "query": [{ "key": "userId", "value": "2" }] }
+          }
+        },
+        {
+          "name": "5.2 POST Agregar al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{buyerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 2,\n  \"productId\": 1,\n  \"quantity\": 2\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/cart/items", "host": ["{{baseUrl}}"], "path": ["cart", "items"] }
+          }
+        },
+        {
+          "name": "5.3 POST Agregar otro producto al carrito",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{buyerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 2,\n  \"productId\": 3,\n  \"quantity\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/cart/items", "host": ["{{baseUrl}}"], "path": ["cart", "items"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "6. Ordenes (Protegido)",
+      "item": [
+        {
+          "name": "6.1 POST Checkout (crear orden)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{buyerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": 2\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/orders/checkout", "host": ["{{baseUrl}}"], "path": ["orders", "checkout"] }
+          }
+        },
+        {
+          "name": "6.2 GET Mis ordenes",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{buyerToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/orders?userId=2", "host": ["{{baseUrl}}"], "path": ["orders"], "query": [{ "key": "userId", "value": "2" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7. Favoritos (Protegido - BUYER)",
+      "item": [
+        {
+          "name": "7.1 GET Mis favoritos",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{buyerToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/favorites", "host": ["{{baseUrl}}"], "path": ["favorites"] }
+          }
+        },
+        {
+          "name": "7.2 POST Agregar a favoritos",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{buyerToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/favorites/1", "host": ["{{baseUrl}}"], "path": ["favorites", "1"] }
+          }
+        },
+        {
+          "name": "7.3 GET Verificar si es favorito",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{buyerToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/favorites/1/check", "host": ["{{baseUrl}}"], "path": ["favorites", "1", "check"] }
+          }
+        },
+        {
+          "name": "7.4 DELETE Quitar de favoritos",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{buyerToken}}" }
+            ],
+            "url": { "raw": "{{baseUrl}}/favorites/1", "host": ["{{baseUrl}}"], "path": ["favorites", "1"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "8. Pruebas de Seguridad",
+      "item": [
+        {
+          "name": "8.1 SIN TOKEN - Crear producto (debe dar 401)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Producto sin auth\",\n  \"description\": \"No deberia crearse\",\n  \"price\": 10000,\n  \"stock\": 10,\n  \"categoryId\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+          }
+        },
+        {
+          "name": "8.2 ROL INSUFICIENTE - BUYER intenta crear producto (debe dar 403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{buyerToken}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Producto con buyer\",\n  \"description\": \"No deberia crearse - rol insuficiente\",\n  \"price\": 10000,\n  \"stock\": 10,\n  \"categoryId\": 1\n}"
+            },
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+          }
+        },
+        {
+          "name": "8.3 SIN TOKEN - Ver carrito (debe dar 401)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/cart?userId=2", "host": ["{{baseUrl}}"], "path": ["cart"], "query": [{ "key": "userId", "value": "2" }] }
+          }
+        },
+        {
+          "name": "8.4 SIN TOKEN - Ver favoritos (debe dar 401)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/favorites", "host": ["{{baseUrl}}"], "path": ["favorites"] }
+          }
+        },
+        {
+          "name": "8.5 ENDPOINT PUBLICO - Ver productos (debe dar 200 sin token)",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/products", "host": ["{{baseUrl}}"], "path": ["products"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "9. Status",
+      "item": [
+        {
+          "name": "9.1 Health Check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{baseUrl}}/status", "host": ["{{baseUrl}}"], "path": ["status"] }
+          }
+        }
+      ]
+    }
+  ]
+}
