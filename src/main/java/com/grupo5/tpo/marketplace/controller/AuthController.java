@@ -1,7 +1,5 @@
 package com.grupo5.tpo.marketplace.controller;
 
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -9,8 +7,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.grupo5.tpo.marketplace.model.User;
+import com.grupo5.tpo.marketplace.dto.AuthResponse;
+import com.grupo5.tpo.marketplace.dto.LoginRequest;
+import com.grupo5.tpo.marketplace.dto.RegisterRequest;
 import com.grupo5.tpo.marketplace.service.UserService;
+
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/auth")
@@ -20,23 +22,14 @@ public class AuthController {
     private UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<User> register(@RequestBody User user) {
-        User created = userService.register(user);
-        return ResponseEntity.status(201).body(created);
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
+        AuthResponse response = userService.register(request);
+        return ResponseEntity.status(201).body(response);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
-        String username = credentials.get("username");
-        String password = credentials.get("password");
-
-        return userService.login(username, password)
-                .map(user -> ResponseEntity.ok(Map.of(
-                        "message", "Login exitoso",
-                        "userId", user.getId(),
-                        "username", user.getUsername(),
-                        "role", user.getRole()
-                )))
-                .orElse(ResponseEntity.status(401).body(Map.of("error", "Credenciales inválidas")));
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
+        AuthResponse response = userService.login(request);
+        return ResponseEntity.ok(response);
     }
 }

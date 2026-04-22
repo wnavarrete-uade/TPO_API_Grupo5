@@ -1,96 +1,88 @@
 package com.grupo5.tpo.marketplace.service;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import com.grupo5.tpo.marketplace.model.Cart;
-import com.grupo5.tpo.marketplace.model.Order;
-import com.grupo5.tpo.marketplace.model.OrderItem;
-import com.grupo5.tpo.marketplace.model.Product;
+import com.grupo5.tpo.marketplace.exception.BadRequestException;
+import com.grupo5.tpo.marketplace.exception.ResourceNotFoundException;
+import com.grupo5.tpo.marketplace.model.*;
+import com.grupo5.tpo.marketplace.repository.OrderRepository;
+import com.grupo5.tpo.marketplace.repository.ProductRepository;
+import com.grupo5.tpo.marketplace.repository.UserRepository;
 
 @Service
 public class OrderService {
 
     @Autowired
-    private CartService cartService;
+    private OrderRepository orderRepository;
 
     @Autowired
-    private ProductService productService;
+    private ProductRepository productRepository;
 
-    private final List<Order> orders = new ArrayList<>();
-    private final AtomicLong orderIdCounter = new AtomicLong(1);
-    private final AtomicLong itemIdCounter = new AtomicLong(1);
+    @Autowired
+    private UserRepository userRepository;
 
-    public Order checkout(Long userId) {
-        Cart cart = cartService.getOrCreateCart(userId);
+    @Autowired
+    private CartService cartService;
+
+    @Transactional
+    public Order checkout(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+
+        Cart cart = cartService.getOrCreateCart(username);
 
         if (cart.getItems().isEmpty()) {
-            throw new RuntimeException("El carrito está vacío");
+            throw new BadRequestException("El carrito está vacío");
         }
 
-        // Crear order items y calcular total
-        List<OrderItem> orderItems = new ArrayList<>();
+        Order order = new Order();
+        order.setUser(user);
+        order.setStatus(OrderStatus.CONFIRMED);
+
         double total = 0;
 
-        for (var cartItem : cart.getItems()) {
-            Product product = productService.getById(cartItem.getProductId())
-                    .orElseThrow(() -> new RuntimeException("Producto no encontrado"));
+        for (CartItem cartItem : cart.getItems()) {
+            Product product = cartItem.getProduct();
 
             if (product.getStock() < cartItem.getQuantity()) {
-                throw new RuntimeException("Stock insuficiente para: " + product.getName());
+                throw new BadRequestException("Stock insuficiente para: " + product.getName());
             }
 
             double finalPrice = product.getPrice() * (1 - product.getDiscount() / 100);
 
             OrderItem orderItem = new OrderItem();
-            orderItem.setId(itemIdCounter.getAndIncrement());
-            orderItem.setProductId(product.getId());
+            orderItem.setOrder(order);
+            orderItem.setProduct(product);
             orderItem.setQuantity(cartItem.getQuantity());
             orderItem.setUnitPrice(finalPrice);
-            orderItems.add(orderItem);
+            order.getItems().add(orderItem);
 
             total += finalPrice * cartItem.getQuantity();
 
-            // Descontar stock
-            productService.updateStock(product.getId(), product.getStock() - cartItem.getQuantity());
+            product.setStock(product.getStock() - cartItem.getQuantity());
+            productRepository.save(product);
         }
 
-        // Crear la orden
-        Order order = new Order();
-        order.setId(orderIdCounter.getAndIncrement());
-        order.setUserId(userId);
         order.setTotal(total);
-        order.setStatus("CONFIRMED");
-        order.setCreatedAt(LocalDateTime.now());
-        order.setItems(orderItems);
+        order = orderRepository.save(order);
 
-        // Setear orderId en cada item
-        orderItems.forEach(item -> item.setOrderId(order.getId()));
-
-        orders.add(order);
-
-        // Vaciar el carrito
-        cartService.clearCart(userId);
+        cartService.clearCart(username);
 
         return order;
     }
 
-    public List<Order> getByUserId(Long userId) {
-        return orders.stream()
-                .filter(o -> o.getUserId().equals(userId))
-                .collect(Collectors.toList());
+    public List<Order> getByUsername(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        return orderRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
     }
 
-    public Optional<Order> getById(Long id) {
-        return orders.stream()
-                .filter(o -> o.getId().equals(id))
-                .findFirst();
+    public Order getById(Long id) {
+        return orderRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Orden no encontrada"));
     }
 }
