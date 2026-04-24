@@ -45,29 +45,44 @@ public class ProductController {
     }
 
     @PostMapping
-    public ResponseEntity<Product> create(@Valid @RequestBody ProductRequest request, Principal principal) {
+    public ResponseEntity<Map<String, Object>> create(@Valid @RequestBody ProductRequest request, Principal principal) {
         Product created = productService.create(request, principal.getName());
-        return ResponseEntity.status(201).body(created);
+        return ResponseEntity.status(201).body(Map.of(
+                "message", "Producto creado correctamente",
+                "data", created
+        ));
     }
 
     @PutMapping("/{id}")
-    public Product update(@PathVariable Long id, @Valid @RequestBody ProductRequest request, Principal principal) {
-        return productService.update(id, request, principal.getName());
+    public ResponseEntity<Map<String, Object>> update(@PathVariable Long id, @Valid @RequestBody ProductRequest request, Principal principal) {
+        Product updated = productService.update(id, request, principal.getName());
+        return ResponseEntity.ok(Map.of(
+                "message", "Producto actualizado correctamente",
+                "data", updated
+        ));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id, Principal principal) {
+    public ResponseEntity<Map<String, String>> delete(@PathVariable Long id, Principal principal) {
         productService.delete(id, principal.getName());
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(Map.of("message", "Producto eliminado correctamente"));
     }
 
     @PatchMapping("/{id}/stock")
-    public Product updateStock(@PathVariable Long id, @RequestBody Map<String, Integer> body, Principal principal) {
-        return productService.updateStock(id, body.get("stock"), principal.getName());
+    public ResponseEntity<Map<String, Object>> updateStock(@PathVariable Long id, @RequestBody Map<String, Integer> body, Principal principal) {
+        Product updated = productService.updateStock(id, body.get("stock"), principal.getName());
+        return ResponseEntity.ok(Map.of(
+                "message", "Stock actualizado correctamente",
+                "data", updated
+        ));
     }
 
     @PatchMapping("/{id}/discount")
-    public Product updateDiscount(@PathVariable Long id, @RequestBody Map<String, Double> body, Principal principal) {
-        return productService.updateDiscount(id, body.get("discount"), principal.getName());
+    public ResponseEntity<Map<String, Object>> updateDiscount(@PathVariable Long id, @RequestBody Map<String, Double> body, Principal principal) {
+        Product updated = productService.updateDiscount(id, body.get("discount"), principal.getName());
+        return ResponseEntity.ok(Map.of(
+                "message", "Descuento actualizado correctamente",
+                "data", updated
+        ));
     }
 }

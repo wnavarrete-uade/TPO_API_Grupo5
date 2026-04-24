@@ -2,6 +2,7 @@ package com.grupo5.tpo.marketplace.controller;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,9 +19,12 @@ public class OrderController {
     private OrderService orderService;
 
     @PostMapping("/checkout")
-    public ResponseEntity<Order> checkout(Principal principal) {
+    public ResponseEntity<Map<String, Object>> checkout(Principal principal) {
         Order order = orderService.checkout(principal.getName());
-        return ResponseEntity.status(201).body(order);
+        return ResponseEntity.status(201).body(Map.of(
+                "message", "Orden creada correctamente",
+                "data", order
+        ));
     }
 
     @GetMapping
