@@ -1,8 +1,10 @@
 package com.grupo5.tpo.marketplace.controller;
 
 import java.security.Principal;
+import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.grupo5.tpo.marketplace.model.User;
@@ -21,8 +23,12 @@ public class UserController {
     }
 
     @PutMapping("/me")
-    public User updateProfile(@RequestBody User updated, Principal principal) {
+    public ResponseEntity<Map<String, Object>> updateProfile(@RequestBody User updated, Principal principal) {
         User current = userService.getByUsername(principal.getName());
-        return userService.update(current.getId(), updated);
+        User saved = userService.update(current.getId(), updated);
+        return ResponseEntity.ok(Map.of(
+                "message", "Perfil actualizado correctamente",
+                "data", saved
+        ));
     }
 }
