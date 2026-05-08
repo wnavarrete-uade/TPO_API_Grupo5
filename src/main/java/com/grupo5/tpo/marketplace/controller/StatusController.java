@@ -12,7 +12,7 @@ public class StatusController {
     public Map<String, String> status() {
         return Map.of(
                 "status", "UP",
-                "application", "FitMarket - Grupo 5"
+                "application", "FitMarket - Grupo 3"
         );
     }
 }

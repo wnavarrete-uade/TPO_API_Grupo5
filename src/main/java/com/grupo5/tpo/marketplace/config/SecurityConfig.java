@@ -52,8 +52,7 @@ public class SecurityConfig {
                 .requestMatchers("/status").permitAll()
                 .requestMatchers(HttpMethod.GET, "/products/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/categories/**").permitAll()
-                .requestMatchers("/swagger-ui/**", "/api-docs/**", "/swagger-ui.html").permitAll()
-                .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/swagger-ui/**", "/swagger-ui.html").permitAll()
 
                 // Solo SELLER puede crear/modificar/eliminar productos
                 .requestMatchers(HttpMethod.POST, "/products").hasRole("SELLER")
